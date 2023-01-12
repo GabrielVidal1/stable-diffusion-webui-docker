@@ -16,11 +16,12 @@ import modules.images as images
 import modules.scripts
 
 
-def process_batch(p, input_dir, output_dir, args):
+def process_batch(p, input_dir, output_dir, args, suffix = "_mask"):
     processing.fix_seed(p)
 
     images = shared.listfiles(input_dir)
 
+    images = [i for i in images if not i.endswith(suffix + os.path.splitext(i)[1])]
     print(f"Will process {len(images)} images, creating {p.n_iter * p.batch_size} new images for each.")
 
     save_normally = output_dir == ''
@@ -39,6 +40,17 @@ def process_batch(p, input_dir, output_dir, args):
             break
 
         img = Image.open(image)
+        
+        filename = os.path.basename(image)
+        filename_w_ext, ext = os.path.splitext(filename)
+        mask_filename = f'{filename_w_ext}{suffix}{ext}'
+        
+        mask_path = os.path.join(os.path.dirname(image), mask_filename)
+        print(mask_path)
+        if os.path.exists(mask_path) :
+            print("found mask")
+            p.mask = Image.open(mask_path)
+
         # Use the EXIF orientation of photos taken by smartphones.
         img = ImageOps.exif_transpose(img)
         p.init_images = [img] * p.batch_size
